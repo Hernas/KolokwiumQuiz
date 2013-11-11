@@ -1,34 +1,47 @@
 <?php
-$file = '~/Developer/Private/KolosKodowanie/Kolokwium2013.7z';
+
+$file = './Kolokwium2013.7z';
 $password = '6DWHPPmVJ2X4WayJFxmAGJf8';
 
 /**
- * Ale żeby nie było tak łatwo – używamy go niebezpośrednio. Hasło zostało poddane haszowaniu dokładnie 5razy z użyciem następujących algorytmów:
-SHA-1
-Rot13
-Base64
-MD5
-SHA-3 256bit (Keccak)
+* Five algoritms used to hash above passwords
+* SHA-1
+* Rot13
+* Base64
+* MD5
+* SHA-3 256bit (Keccak)
  */
 
+
+/**
+ * SHA3 function is not in PHP, I compiled this and added from https://github.com/strawbrary/php-sha3
+ */
 $hashingFunctions = array('sha1', 'str_rot13', 'base64_encode', 'md5', 'sha3');
+
+
 echo 'Let\'s start'."\n";
-$words = array('a','b','c');
 $permutations = get_all_permutations($hashingFunctions);
 echo 'Available combinations: '.count($permutations).''."\n";
 $i = 0;
-echo $permutations[2234];
-exit;
 foreach($permutations AS $funcs) {
     $hashedPass = hashPassword($funcs, $password);
     if(checkPassword($hashedPass, $file)) {
-        echo 'Correct password: '.$hashedPass."\n";
+        echo $i.': Correct password: '.$hashedPass."\n";
+        echo 'Functions used in this order: '.$permutations[$i]."\n";
         exit;
     } else {
         echo $i.': Checked "'.$hashedPass.'"'."\n";
     }
     $i++;
 }
+
+/**
+ * This functions hash our password by every hash function we provide.
+ * For SHA3 I added another parameter because we need 256 bit hashing
+ * @param $funcs Function sepaated which will hash password
+ * @param $password Password which should be hashed by functions
+ * @return Hashed password
+ */
 function hashPassword($funcs, $password) {
     $ff = explode(' ', $funcs);
     foreach($ff AS $function) {
@@ -41,6 +54,12 @@ function hashPassword($funcs, $password) {
     return $password;
 }
 
+/**
+ * This runs 7z script by shell and checks if file can be extracted using password
+ * @param $password
+ * @param $file
+ * @return bool
+ */
 function checkPassword($password, $file) {
     exec('7z e -y -p'.$password.' '.$file, $output);
     if(!strstr($output[6], 'Wrong password')) {
@@ -49,56 +68,34 @@ function checkPassword($password, $file) {
     return false;
 }
 
-function permutations($arr,$n)
-{
-    $res = array();
-    foreach ($arr as $w)
+
+/**
+ * Functions below I got from Google, they will produce every permutation with repeatable items.
+ */
+    function permutations($arr,$n)
     {
-        if ($n==1) $res[] = $w;
-        else
+        $res = array();
+        foreach ($arr as $w)
         {
-            $perms = permutations($arr,$n-1);
-            foreach ($perms as $p)
+            if ($n==1) $res[] = $w;
+            else
             {
-                $res[] = $w." ".$p;
+                $perms = permutations($arr,$n-1);
+                foreach ($perms as $p)
+                {
+                    $res[] = $w." ".$p;
+                }
             }
         }
+        return $res;
     }
-    return $res;
-}
 
-function get_all_permutations($words=array())
-{
-    $r = array();
-    for($i=sizeof($words);$i>0;$i--)
+    function get_all_permutations($words=array())
     {
-        $r = array_merge(permutations($words,$i),$r);
+        $r = array();
+        for($i=sizeof($words);$i>0;$i--)
+        {
+            $r = array_merge(permutations($words,$i),$r);
+        }
+        return $r;
     }
-    return $r;
-}
-/**
- * 7z e archive.7z U
-
-7-Zip [64] 9.20  Copyright (c) 1999-2010 Igor Pavlov  2010-11-18
-p7zip Version 9.20 (locale=utf8,Utf16=on,HugeFiles=on,4 CPUs)
-
-Processing archive: archive.7z
-
-Extracting  UnicornVLDB-final.pdf     Data Error in encrypted file. Wrong password?
-
-Sub items Errors: 1
- */
-
-/**
- * 7-Zip [64] 9.20  Copyright (c) 1999-2010 Igor Pavlov  2010-11-18
-p7zip Version 9.20 (locale=utf8,Utf16=on,HugeFiles=on,4 CPUs)
-
-Processing archive: archive.7z
-
-Extracting  UnicornVLDB-final.pdf
-
-Everything is Ok
-
-Size:       751582
-Compressed: 631107
- */
